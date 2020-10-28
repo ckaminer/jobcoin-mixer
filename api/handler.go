@@ -7,24 +7,19 @@ import (
 	"net/http"
 
 	"github.com/ckaminer/jobcoin/mixerlib"
+	"github.com/google/uuid"
 )
-
-// UserChannel is used to introduce created users into the Mixer poll for new users
-var UserChannel chan mixerlib.MixerUser
-
-// HouseChannel is used to introduce users into the HouseQueue poll
-var HouseChannel chan mixerlib.MixerUser
 
 // ErrorPayload represents the error that will returned by the API.
 type ErrorPayload struct {
 	Message string `json:"error"`
 }
 
-// NewUserHandler handles the creation of users.
-// It will validate inputs before sending users into the UserChannel.
-func NewUserHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
+// CreateNewUserHandler returns a HandlerFunc to handle the creation of users.
+// It accepts a channel to be used in the resulting HanderFunc
+// HandlerFunc will validate inputs before sending users into the provided userChannel.
+func CreateNewUserHandler(userChan chan mixerlib.MixerUser) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var user mixerlib.MixerUser
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
@@ -32,6 +27,7 @@ func NewUserHandler(w http.ResponseWriter, r *http.Request) {
 			respondWithJSON(w, http.StatusBadRequest, ErrorPayload{"Invalid request body"})
 			return
 		}
+		defer r.Body.Close()
 
 		if address, valid := mixerlib.ValidUserAddresses(user.ReturnAddresses); !valid {
 			respondWithJSON(w, http.StatusConflict, ErrorPayload{
@@ -40,12 +36,16 @@ func NewUserHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		UserChannel <- user
+		depositAddress, err := uuid.NewUUID()
+		if err != nil {
+			respondWithJSON(w, http.StatusInternalServerError, ErrorPayload{"Failed to create user"})
+			log.Fatal(err)
+		}
+		user.DepositAddress = depositAddress.String()
+
+		userChan <- user
 
 		respondWithJSON(w, http.StatusCreated, user)
-		defer r.Body.Close()
-	default:
-		respondWithJSON(w, http.StatusNotFound, nil)
 	}
 }
 

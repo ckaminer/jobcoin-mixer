@@ -20,7 +20,18 @@ var HouseQueue = []MixerUser{}
 // HouseAddress is the address used for the house account. This will
 // be the Jobcoin repository for user submitted coins though no user
 // transactions should send Jobcoins directly to the house address.
-const HouseAddress = "1234abcd5678efgh"
+// Note it is reset when the app server starts.
+var HouseAddress = "121212-house-address-121212"
+
+// MixerBankFund is the address used for the collection of service fees.
+// When users deposit money into their deposit addresses, a percentage will
+// be taken from that deposit and sent to the MixerBankFund.
+const MixerBankFund = "121212-bank-fund-121212"
+
+// ServiceFeePctg is the amount of each deposit that will be collected
+// by the Mixer. This value times each deposit will be sent to the
+// MixerBankFund upond delivery of money from deposit address to the house.
+const ServiceFeePctg = 0.01
 
 // DistributionIncrement represents the amount of Jobcoin that will be returned
 // back to users during each round of returns.
@@ -56,7 +67,16 @@ func (ml *MixerLib) transferDepositToHouse(user MixerUser) (bool, error) {
 	balance, _ := strconv.ParseFloat(info.Balance, 64)
 	if balance > 0 {
 		sentToHouse = true
-		err = ml.JobcoinClient.SendJobcoin(user.DepositAddress, HouseAddress, info.Balance)
+		bankFee := balance * ServiceFeePctg
+
+		bankAmount := fmt.Sprintf("%g", bankFee)
+		houseAmount := fmt.Sprintf("%g", balance-bankFee)
+
+		err = ml.JobcoinClient.SendJobcoin(user.DepositAddress, MixerBankFund, bankAmount)
+		if err != nil {
+			return false, err
+		}
+		err = ml.JobcoinClient.SendJobcoin(user.DepositAddress, HouseAddress, houseAmount)
 		if err != nil {
 			return false, err
 		}
@@ -141,7 +161,7 @@ func (ml *MixerLib) assignReturnAmounts(addresses []string, distAmount float64) 
 		}
 
 		// Assign reminder to last address
-		returnAmounts[addresses[len(addresses)-1]] = fmt.Sprintf("%f", distAmount)
+		returnAmounts[addresses[len(addresses)-1]] = fmt.Sprintf("%g", distAmount)
 	}
 
 	return returnAmounts

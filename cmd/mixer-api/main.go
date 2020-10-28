@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/ckaminer/jobcoin"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 
 	"github.com/ckaminer/jobcoin/api"
 	"github.com/ckaminer/jobcoin/clientlib"
@@ -13,10 +16,11 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/api/users", api.NewUserHandler)
+	userChan := make(chan mixerlib.MixerUser)
+	houseChan := make(chan mixerlib.MixerUser)
 
-	api.UserChannel = make(chan mixerlib.MixerUser)
-	api.HouseChannel = make(chan mixerlib.MixerUser)
+	r := mux.NewRouter()
+	r.HandleFunc("/api/users", api.CreateNewUserHandler(userChan)).Methods("POST")
 
 	userTicker := time.NewTicker(time.Second * 5)
 	houseTicker := time.NewTicker(time.Second * 6)
@@ -26,8 +30,16 @@ func main() {
 			Client: &http.Client{},
 		},
 	}
-	go ml.PollForNewDeposits(userTicker, api.UserChannel, api.HouseChannel)
-	go ml.PollForUserReturns(houseTicker, api.HouseChannel)
 
-	log.Fatal(http.ListenAndServe(jobcoin.MixerPort, nil))
+	houseAddress, err := uuid.NewUUID()
+	if err != nil {
+		log.Fatal(err)
+	}
+	mixerlib.HouseAddress = houseAddress.String()
+	fmt.Println("The house address has been set to: ", mixerlib.HouseAddress)
+
+	go ml.PollForNewDeposits(userTicker, userChan, houseChan)
+	go ml.PollForUserReturns(houseTicker, houseChan)
+
+	log.Fatal(http.ListenAndServe(jobcoin.MixerPort, r))
 }

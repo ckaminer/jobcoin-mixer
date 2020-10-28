@@ -7,7 +7,7 @@ GOGET=$(GOCMD) get
 CLI_BINARY_NAME=mixer-cli
 API_BINARY_NAME=mixer-api
 
-all: clean deps build
+all: clean deps build-cli build-api
 build-cli: deps
 		$(GOBUILD) -o bin/$(CLI_BINARY_NAME) -v cmd/mixer-cli/main.go
 build-api: deps
@@ -20,5 +20,6 @@ clean:
 		rm -f $(API_BINARY_NAME)
 deps:
 		$(GOGET) -u github.com/google/uuid
+		$(GOGET) -u github.com/gorilla/mux
 
 .PHONY: all build test clean deps

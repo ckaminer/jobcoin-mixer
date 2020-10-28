@@ -19,11 +19,11 @@ func (mc *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	}, mc.Error
 }
 
-// newClientMock returns a mock implementation of the HTTPClient interface.
+// NewClientMock returns a mock implementation of the HTTPClient interface.
 // status will be the StatusCode of the returned http.Response.
 // payload will be the Body of the returned http.Response.
 // err will be the error returned.
-func newClientMock(status int, payload []byte, err error) HTTPClient {
+func NewClientMock(status int, payload []byte, err error) HTTPClient {
 	return &mockHTTPClient{
 		Status:  status,
 		Payload: payload,

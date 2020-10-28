@@ -26,7 +26,7 @@ func TestGetAddressInfo_ReturnsAddressInfoForGivenAddress(t *testing.T) {
 			}
 		]
 	}`)
-	client := newClientMock(http.StatusOK, mockResponseBody, nil)
+	client := NewClientMock(http.StatusOK, mockResponseBody, nil)
 	jl := &JobcoinLib{client}
 
 	expectedAddrInfo := JobcoinAddressInfo{
@@ -57,7 +57,7 @@ func TestGetAddressInfo_ReturnsAddressInfoForGivenAddress(t *testing.T) {
 
 func TestGetAddressInfo_ReturnsErrorIfClientRequestFails(t *testing.T) {
 	expectedErr := errors.New("request failed")
-	client := newClientMock(0, nil, expectedErr)
+	client := NewClientMock(0, nil, expectedErr)
 	jl := &JobcoinLib{client}
 
 	_, err := jl.GetAddressInfo("01234abcde")
@@ -85,7 +85,7 @@ func TestGetAddressInfo_ReturnsErrorIfJsonFailsToDecode(t *testing.T) {
 			}
 		]
 	}`)
-	client := newClientMock(http.StatusOK, mockResponseBody, nil)
+	client := NewClientMock(http.StatusOK, mockResponseBody, nil)
 	jl := &JobcoinLib{client}
 
 	_, err := jl.GetAddressInfo("01234abcde")
@@ -103,7 +103,7 @@ func TestSendJobcoin_SendsJobcoinFromOneAddressToAnother(t *testing.T) {
 			"status": "OK"
 		}
 	`)
-	client := newClientMock(http.StatusOK, mockResponseBody, nil)
+	client := NewClientMock(http.StatusOK, mockResponseBody, nil)
 	jl := &JobcoinLib{client}
 
 	err := jl.SendJobcoin("1234abcd", "9876zyxw", "11.23")
@@ -114,7 +114,7 @@ func TestSendJobcoin_SendsJobcoinFromOneAddressToAnother(t *testing.T) {
 
 func TestSendJobcoin_ReturnsErrorIfClientRequestFails(t *testing.T) {
 	expectedErr := errors.New("request failed")
-	client := newClientMock(0, nil, expectedErr)
+	client := NewClientMock(0, nil, expectedErr)
 	jl := &JobcoinLib{client}
 
 	err := jl.SendJobcoin("1234abcd", "9876zyxw", "11.23")
@@ -129,7 +129,7 @@ func TestSendJobcoin_ReturnsErrorIfTransactionCreationFails(t *testing.T) {
 	mockResponseBody := []byte(`{
 		"error": "Insufficient Funds"
 	}`)
-	client := newClientMock(http.StatusUnprocessableEntity, mockResponseBody, nil)
+	client := NewClientMock(http.StatusUnprocessableEntity, mockResponseBody, nil)
 	jl := &JobcoinLib{client}
 
 	err := jl.SendJobcoin("1234abcd", "9876zyxw", "11.23")

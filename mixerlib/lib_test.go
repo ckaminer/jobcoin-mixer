@@ -397,7 +397,7 @@ func TestAssignReturnAmounts_DistributesEntireAmountIfOneAddress(t *testing.T) {
 	distAmount := 5.0
 
 	expectedReturns := map[string]string{
-		"1111aaaa": "5.000000",
+		"1111aaaa": "5",
 	}
 
 	ml := &MixerLib{}
